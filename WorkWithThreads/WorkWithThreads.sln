@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31112.23
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkWithThreads", "WorkWithThreads\WorkWithThreads.csproj", "{CBA57159-73F2-465E-A60D-4B295653B18E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{168D7C01-B2C9-4452-BCAF-68A5614AF79B} = {168D7C01-B2C9-4452-BCAF-68A5614AF79B}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkWithThreadsProc2", "..\WorkWithThreadsProc2\WorkWithThreadsProc2\WorkWithThreadsProc2.csproj", "{168D7C01-B2C9-4452-BCAF-68A5614AF79B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CBA57159-73F2-465E-A60D-4B295653B18E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CBA57159-73F2-465E-A60D-4B295653B18E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CBA57159-73F2-465E-A60D-4B295653B18E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CBA57159-73F2-465E-A60D-4B295653B18E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{168D7C01-B2C9-4452-BCAF-68A5614AF79B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{168D7C01-B2C9-4452-BCAF-68A5614AF79B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{168D7C01-B2C9-4452-BCAF-68A5614AF79B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{168D7C01-B2C9-4452-BCAF-68A5614AF79B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D0800284-AC8E-4621-BB0B-D88092E552E6}
+	EndGlobalSection
+EndGlobal
