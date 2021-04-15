@@ -246,6 +246,8 @@ namespace WorkWithThreads
             {
 
             }
+            
+            if (arrInput is List<ObjectIdUri>){}
 
             var arr = (List<ObjectIdText>)arrInput;
             var jsonString = JsonConvert.SerializeObject(arr);
