@@ -1,7 +1,6 @@
 ﻿#define ThreadAndProcess
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -19,12 +18,12 @@ namespace WorkWithThreads
 {
     internal class Program
     {
-        private static bool _file1;
-        private static bool _file2;
-        private static bool _file3;
-        private static bool _trigger;
+        private static bool _flagFile1;
+        private static bool _flagFile2;
+        private static bool _flagFile3;
+        private static bool _triggerProcess;
 
-        public static void Main(string[] args)
+        public static void Main()
         {
             var threadMain = Thread.CurrentThread;
             threadMain.Name = "T0 (Main)";
@@ -64,7 +63,7 @@ namespace WorkWithThreads
         {
             while (true)
             {
-                if (_trigger) continue;
+                if (_triggerProcess) continue;
                 Thread.Sleep(301);
                 if (Thread.CurrentThread.Name == "T1 (Text)")
                     SetData1InTextFile(arrInput);
@@ -113,17 +112,21 @@ namespace WorkWithThreads
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("Trigger.txt", sizeof(bool)))
                 {
                     using var acces = mmf.CreateViewAccessor(0, sizeof(bool));
+                    
+                    while (!acces.CanRead)
+                    {
 
-                    _trigger = acces.ReadBoolean(0);
+                    }
+                    _triggerProcess = acces.ReadBoolean(0);
 
-                    if (!_trigger)
+                    if (!_triggerProcess)
                     {
                         ReadDataFirstFile();
                         ReadDataSecondFile();
                         ReadDataEndFile();
-                        _file1 = false;
-                        _file2 = false;
-                        _file3 = false;
+                        _flagFile1 = false;
+                        _flagFile2 = false;
+                        _flagFile3 = false;
                         Thread.Sleep(100);
                         while (!acces.CanWrite)
                         {
@@ -138,7 +141,7 @@ namespace WorkWithThreads
 
         private static void ReadDataFirstFile()
         {
-            while (!_file1)
+            while (!_flagFile1)
             {
 
             }
@@ -168,13 +171,13 @@ namespace WorkWithThreads
 #endif
                 Debug.WriteLine("T4 - END Read T1 File");
             }
-            _file1 = false;
+            _flagFile1 = false;
         }
 
         private static void ReadDataSecondFile()
         {
 
-            while (!_file2)
+            while (!_flagFile2)
             {
 
             }
@@ -202,12 +205,12 @@ namespace WorkWithThreads
 #endif
                 Debug.WriteLine("T4 - END Read T2 File");
             }
-            _file2 = false;
+            _flagFile2 = false;
         }
 
         private static void ReadDataEndFile()
         {
-            while (!_file3)
+            while (!_flagFile3)
             {
 
             }
@@ -234,12 +237,12 @@ namespace WorkWithThreads
 #endif
                 Debug.WriteLine("T4 - END Read T3 File");
             }
-            _file3 = false;
+            _flagFile3 = false;
         }
 
         private static void SetData1InTextFile(object arrInput)
         {
-            while (_file1)
+            while (_flagFile1)
             {
 
             }
@@ -254,7 +257,7 @@ namespace WorkWithThreads
             {
                 streamWriter.WriteLine(jsonString);
             }
-            _file1 = true;
+            _flagFile1 = true;
 #if ThreadAndProcess
             Console.WriteLine("P1 T1 - END writing T1 File");
 #endif
@@ -264,7 +267,7 @@ namespace WorkWithThreads
 
         private static void SetData2InTextFile(object arrInput)
         {
-            while (_file2)
+            while (_flagFile2)
             {
 
             }
@@ -278,7 +281,7 @@ namespace WorkWithThreads
             {
                 streamWriter.WriteLine(jsonString);
             }
-            _file2 = true;
+            _flagFile2 = true;
 #if ThreadAndProcess
             Console.WriteLine("P1 T2 - END writing T2 File");
 #endif
@@ -288,10 +291,11 @@ namespace WorkWithThreads
 
         private static void SetData3InTextFile(object arrInput)
         {
-            while (_file3)
+            while (_flagFile3)
             {
 
             }
+
             var arr = (List<ObjectIdUri>)arrInput;
             var jsonString = JsonConvert.SerializeObject(arr);
 #if ThreadAndProcess
@@ -302,7 +306,7 @@ namespace WorkWithThreads
             {
                 streamWriter.WriteLine(jsonString);
             }
-            _file3 = true;
+            _flagFile3 = true;
 #if ThreadAndProcess
             Console.WriteLine("P1 T3 - END writing T3 File");
 #endif
@@ -316,7 +320,7 @@ namespace WorkWithThreads
 
             api.Authorize(new ApiAuthParams
             {
-                AccessToken = "Token"
+                AccessToken = "d07d682a93f0ba39ed5ee4716020d670c4c979fc091621ca09b5138515b6194b005a8b42b67191e002efa"
             });
             return api;
         }
@@ -331,8 +335,8 @@ namespace WorkWithThreads
             }
             catch
             {
-                Console.WriteLine("wi-fi disconnected!");
-                Debug.WriteLine("wi-fi disconnected!");
+                Console.WriteLine("!!wi-fi disconnected or wrong token!!");
+                Debug.WriteLine("!!wi-fi disconnected or wrong token!!");
                 Environment.Exit(0);
             }
 
