@@ -112,7 +112,7 @@ namespace WorkWithThreads
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("Trigger.txt", sizeof(bool)))
                 {
                     using var acces = mmf.CreateViewAccessor(0, sizeof(bool));
-                    
+
                     while (!acces.CanRead)
                     {
 
@@ -150,7 +150,7 @@ namespace WorkWithThreads
 #endif
             Debug.WriteLine("T4 - reading T1 File");
             string tempData;
-           
+
             using (var streamReader = new StreamReader("text1.json"))
             {
                 tempData = streamReader.ReadToEnd();
@@ -246,8 +246,8 @@ namespace WorkWithThreads
             {
 
             }
-            
-            if (arrInput is List<ObjectIdUri>){}
+
+            if (arrInput is List<ObjectIdUri>) { }
 
             var arr = (List<ObjectIdText>)arrInput;
             var jsonString = JsonConvert.SerializeObject(arr);
@@ -338,43 +338,36 @@ namespace WorkWithThreads
             catch
             {
                 Console.WriteLine("!!wi-fi disconnected or wrong token!!");
-                Debug.WriteLine("!!wi-fi disconnected or wrong token!!");
                 Environment.Exit(0);
             }
 
             foreach (var item in res.Items)
             {
-                var isContentId = false;
-                foreach (var item2 in res.Items)
-                {
-                    if (arrayIdPost.Contains(item2.PostId))
-                    {
-                        isContentId = true;
-                    }
-                }
-                if (isContentId)
-                    continue;
-                if (item.PostId != null)
-                {
-                    if (item.Text != "")
-                    {
-                        arrayObjectIdTexts.Add(new ObjectIdText { IdPost = item.PostId, TextPost = item.Text });
-                    }
+                if (item.PostId == null) continue;
 
-                    if (item.Attachments != null)
-                        foreach (var attachment in item?.Attachments)
+                if (arrayIdPost.Contains(item.PostId)) continue;
+
+                arrayIdPost.Add(item.PostId);
+
+                if (item.Text != "") arrayObjectIdTexts.Add(new ObjectIdText { IdPost = item.PostId, TextPost = item.Text });
+
+                if (item.Attachments == null) continue;
+
+                foreach (var attachment in item?.Attachments)
+                {
+                    if (attachment.Type == typeof(Photo))
+                        arrayObjectIdPhotos.Add(new ObjectIdPhoto
                         {
-                            if (attachment.Type == typeof(Photo))
-                                arrayObjectIdPhotos.Add(new ObjectIdPhoto
-                                {
-                                    IdPost = item.PostId,
-                                    PhotoPost = ((Photo)attachment.Instance).Sizes.Last().Url.ToString()
-                                });
+                            IdPost = item.PostId,
+                            PhotoPost = ((Photo)attachment.Instance).Sizes.Last().Url.ToString()
+                        });
 
-                            if (attachment.Type == typeof(Link))
-                                arrayObjectIdUrIs.Add(new ObjectIdUri
-                                { IdPost = item.PostId, UriPost = ((Link)attachment.Instance).Uri.ToString() });
-                        }
+                    if (attachment.Type == typeof(Link))
+                        arrayObjectIdUrIs.Add(new ObjectIdUri
+                        {
+                            IdPost = item.PostId,
+                            UriPost = ((Link)attachment.Instance).Uri.ToString()
+                        });
                 }
             }
         }
