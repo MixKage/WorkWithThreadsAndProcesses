@@ -99,11 +99,23 @@ namespace WorkWithThreadsProc2
 
         private static void ReadFirstFile()
         {
-            string tempData;
-
-            using (var streamReader = new StreamReader(Path1))
+            string tempData = default;
+            bool allGood = false;
+            while (!allGood)
             {
-                tempData = streamReader.ReadToEnd();
+                try
+                {
+                    using (var streamReader = new StreamReader(Path1))
+                    {
+                        tempData = streamReader.ReadToEnd();
+                    }
+
+                    allGood = true;
+                }
+                catch
+                {
+                    Thread.Sleep(100);
+                }
             }
 
             var restoredPosts = JsonConvert.DeserializeObject<List<ObjectIdText>>(tempData);
@@ -119,11 +131,23 @@ namespace WorkWithThreadsProc2
 
         private static void ReadSecondFile()
         {
-            string tempData;
-
-            using (var streamReader = new StreamReader(Path2))
+            string tempData = default;
+            bool allGood = false;
+            while (!allGood)
             {
-                tempData = streamReader.ReadToEnd();
+                try
+                {
+                    using (var streamReader = new StreamReader(Path2))
+                    {
+                        tempData = streamReader.ReadToEnd();
+                    }
+
+                    allGood = true;
+                }
+                catch
+                {
+                    Thread.Sleep(100);
+                }
             }
 
             var restoredPosts = JsonConvert.DeserializeObject<List<ObjectIdPhoto>>(tempData);
@@ -139,11 +163,23 @@ namespace WorkWithThreadsProc2
 
         private static void ReadEndFile()
         {
-            string tempData;
-
-            using (var streamReader = new StreamReader(Path3))
+            string tempData = default;
+            bool allGood = false;
+            while (!allGood)
             {
-                tempData = streamReader.ReadToEnd();
+                try
+                {
+                    using (var streamReader = new StreamReader(Path2))
+                    {
+                        tempData = streamReader.ReadToEnd();
+                    }
+
+                    allGood = true;
+                }
+                catch
+                {
+                    Thread.Sleep(100);
+                }
             }
 
             var restoredPosts = JsonConvert.DeserializeObject<List<ObjectIdUri>>(tempData);

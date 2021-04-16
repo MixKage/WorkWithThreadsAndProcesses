@@ -126,7 +126,7 @@ namespace WorkWithThreads
             List<ObjectIdPhoto> restoredPostsIdPhoto = default;
             List<ObjectIdUri> restoredPostsIdUri = default;
 
-            string tempData;
+            string tempData = default;
             string path;
             string content;
 
@@ -151,9 +151,23 @@ namespace WorkWithThreads
                     content = " Ссылка поста: ";
                     break;
             }
-            using (var streamReader = new StreamReader(path))
+
+            bool allGood = false;
+            while (!allGood)
             {
-                tempData = streamReader.ReadToEnd();
+                try
+                {
+                    using (var streamReader = new StreamReader(path))
+                    {
+                        tempData = streamReader.ReadToEnd();
+                    }
+
+                    allGood = true;
+                }
+                catch
+                {
+                    Thread.Sleep(100);
+                }
             }
 
             if (tempData.Contains("TextPost"))
@@ -308,10 +322,22 @@ namespace WorkWithThreads
                         break;
                 }
 
-
-                using (var streamWriter = new StreamWriter(path))
+                bool allGood = false;
+                while (!allGood)
                 {
-                    streamWriter.WriteLine(jsonString);
+                    try
+                    {
+                        using (var streamWriter = new StreamWriter(path))
+                        {
+                            streamWriter.WriteLine(jsonString);
+                        }
+
+                        allGood = true;
+                    }
+                    catch
+                    {
+                        Thread.Sleep(100);
+                    }
                 }
 
                 switch (Thread.CurrentThread.Name)
