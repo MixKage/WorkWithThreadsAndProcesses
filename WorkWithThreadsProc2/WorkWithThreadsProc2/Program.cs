@@ -1,11 +1,8 @@
 ﻿#define ThreadAndProcess
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Reflection.PortableExecutable;
-using System.Text;
 using System.Threading;
 using Newtonsoft.Json;
 using WorkWithThreads.Objects;
@@ -17,104 +14,96 @@ namespace WorkWithThreadsProc2
         private static int _endReadFiles;
         private static bool _resume;
         private static bool _start;
+        private static bool _processAccess;
 #if DEBUG
-        private static string Path1 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Debug\netcoreapp3.1\text1.json";
-        private static string Path2 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Debug\netcoreapp3.1\text2.json";
-        private static string Path3 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Debug\netcoreapp3.1\text3.json";
+        private const string Path1 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Debug\netcoreapp3.1\text1.json";
+        private const string Path2 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Debug\netcoreapp3.1\text2.json";
+        private const string Path3 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Debug\netcoreapp3.1\text3.json";
 #endif
 #if !DEBUG
-        private static string Path1 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Release\netcoreapp3.1\text1.json";
-        private static string Path2 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Release\netcoreapp3.1\text2.json";
-        private static string Path3 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Release\netcoreapp3.1\text3.json";
+        private const string Path1 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Release\netcoreapp3.1\text1.json";
+        private const string Path2 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Release\netcoreapp3.1\text2.json";
+        private const string Path3 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Release\netcoreapp3.1\text3.json";
 #endif
-        static void ControllerThread()
+        private static void ControllerThread()
         {
-            Thread T1 = new Thread(WaitingThread)
+            var t1 = new Thread(WaitingThread)
             {
                 Name = "T1"
             };
-            Thread T2 = new Thread(WaitingThread)
+            var t2 = new Thread(WaitingThread)
             {
                 Name = "T2"
             };
-            Thread T3 = new Thread(WaitingThread)
+            var t3 = new Thread(WaitingThread)
             {
                 Name = "T3"
             };
-            T1.Start();
-            T2.Start();
-            T3.Start();
-#if ThreadAndProcess
+            t1.Start();
+            t2.Start();
+            t3.Start();
+
             Console.WriteLine("P2 T1 - Created");
             Console.WriteLine("P2 T2 - Created");
             Console.WriteLine("P2 T3 - Created");
-#endif
         }
 
-        static void Queue()
+        private static void Queue()
         {
             while (true)
             {
                 if (_endReadFiles == 3)
                 {
-                    _resume = true;
                     _start = false;
+                    _resume = true;
                     return;
                 }
             }
         }
 
-        static void WaitingThread()
+        private static void WaitingThread()
         {
             while (true)
             {
                 if (_start)
                 {
                     _endReadFiles = 0;
-                    if (Thread.CurrentThread.Name == "T1")
+                    switch (Thread.CurrentThread.Name)
                     {
-#if ThreadAndProcess
-                        Console.WriteLine("P2 T1 - Read File 1");
-#endif
-                        Debug.WriteLine("T1");
-                        ReadFirstFile();
-                        _endReadFiles++;
-                        Queue();
-                    }
-                    else if (Thread.CurrentThread.Name == "T2")
-                    {
-#if ThreadAndProcess
-                        Console.WriteLine("P2 T2 - Read File 2");
-#endif
-                        Debug.WriteLine("T2");
-                        ReadSecondFile();
-                        _endReadFiles++;
-                        Queue();
-                    }
-                    else if (Thread.CurrentThread.Name == "T3")
-                    {
-#if ThreadAndProcess
-                        Console.WriteLine("P2 T3 - Read File 3");
-#endif
-                        Debug.WriteLine("T3");
-                        ReadEndFile();
-                        _endReadFiles++;
-                        Queue();
+                        case "T1":
+                            Console.WriteLine("P2 T1 - Read File 1");
+                            ReadFirstFile();
+                            Console.WriteLine("P2 T1 - END read File 1");
+                            _endReadFiles++;
+                            Queue();
+                            break;
+                        case "T2":
+                            Console.WriteLine("P2 T2 - Read File 2");
+                            ReadSecondFile();
+                            Console.WriteLine("P2 T2 - END read File 2");
+                            _endReadFiles++;
+                            Queue();
+                            break;
+                        case "T3":
+                            Console.WriteLine("P2 T3 - Read File 3");
+                            ReadEndFile();
+                            Console.WriteLine("P2 T3 - END read File 3");
+                            _endReadFiles++;
+                            Queue();
+                            break;
                     }
                 }
             }
         }
 
 
-
-        static void ReadFirstFile()
+        private static void ReadFirstFile()
         {
             string tempData;
 
             using (var streamReader = new StreamReader(Path1))
             {
                 tempData = streamReader.ReadToEnd();
-                streamReader.Close();
             }
 
             var restoredPosts = JsonConvert.DeserializeObject<List<ObjectIdText>>(tempData);
@@ -128,14 +117,13 @@ namespace WorkWithThreadsProc2
 #endif
         }
 
-        static void ReadSecondFile()
+        private static void ReadSecondFile()
         {
             string tempData;
 
             using (var streamReader = new StreamReader(Path2))
             {
                 tempData = streamReader.ReadToEnd();
-                streamReader.Close();
             }
 
             var restoredPosts = JsonConvert.DeserializeObject<List<ObjectIdPhoto>>(tempData);
@@ -149,14 +137,13 @@ namespace WorkWithThreadsProc2
 #endif
         }
 
-        static void ReadEndFile()
+        private static void ReadEndFile()
         {
             string tempData;
 
             using (var streamReader = new StreamReader(Path3))
             {
                 tempData = streamReader.ReadToEnd();
-                streamReader.Close();
             }
 
             var restoredPosts = JsonConvert.DeserializeObject<List<ObjectIdUri>>(tempData);
@@ -171,40 +158,44 @@ namespace WorkWithThreadsProc2
 #endif
         }
 
-        static void StartWork()
+        private static void StartWork()
         {
             while (true)
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("Trigger.txt", sizeof(bool)))
+                using MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("Trigger", sizeof(bool));
+                using var access = mmf.CreateViewAccessor(0, sizeof(bool));
+
+                while (!access.CanRead) { }
+                access.Read(0, out _processAccess);
+
+                if (_processAccess)
                 {
-                    using var trigger = mmf.CreateViewAccessor(0, sizeof(bool));
-                    trigger.Read(0, out _start);
+                    Console.WriteLine("P2 T0 - Give access");
+                    _start = true;
+                    _processAccess = false;
+                    while (!_resume) { }
 
-                    if (_start)
-                    {
-#if ThreadAndProcess
-                        Console.WriteLine("P2 T0 - Check access");
-#endif
-                        Debug.WriteLine("T0");
-                        Thread.Sleep(50);
-                        _start = false;
-                    }
+                    while (!access.CanWrite) { }
+                    access.Write(0, _processAccess);
+                    _resume = false;
+                    Thread.Sleep(300);
+                    break;
 
-                    if (_resume)
-                    {
-                        trigger.Write(0, _start);
-                        _resume = false;
-                    }
                 }
+
+                //if (_resume)
+                //{
+                //    while (!access.CanWrite) { }
+                //    access.Write(0, _processAccess);
+                //    _resume = false;
+                //}
             }
         }
 
-        static void Main(string[] args)
+        private static void Main()
         {
-            ControllerThread();
-#if ThreadAndProcess
             Console.WriteLine("P2 T0 - Start");
-#endif
+            ControllerThread();
             while (true)
             {
                 StartWork();
