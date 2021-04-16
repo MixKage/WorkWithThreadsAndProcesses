@@ -182,13 +182,6 @@ namespace WorkWithThreadsProc2
                     break;
 
                 }
-
-                //if (_resume)
-                //{
-                //    while (!access.CanWrite) { }
-                //    access.Write(0, _processAccess);
-                //    _resume = false;
-                //}
             }
         }
 
