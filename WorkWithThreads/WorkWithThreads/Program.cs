@@ -308,6 +308,7 @@ namespace WorkWithThreads
                         break;
                 }
 
+
                 using (var streamWriter = new StreamWriter(path))
                 {
                     streamWriter.WriteLine(jsonString);
