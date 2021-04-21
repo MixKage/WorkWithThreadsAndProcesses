@@ -11,9 +11,6 @@ namespace WorkWithThreadsProc2
 {
     class Program
     {
-        private static int _endReadFiles;
-        private static bool _resume;
-        private static bool _start;
         private static bool _processAccess;
 #if DEBUG
         private const string Path1 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Debug\netcoreapp3.1\text1.json";
@@ -25,78 +22,6 @@ namespace WorkWithThreadsProc2
         private const string Path2 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Release\netcoreapp3.1\text2.json";
         private const string Path3 = @"C:\Users\user\Desktop\OS\WorkWithThreads\WorkWithThreads\bin\Release\netcoreapp3.1\text3.json";
 #endif
-        private static void ControllerThread()
-        {
-            var t1 = new Thread(WaitingThread)
-            {
-                Name = "T1"
-            };
-            var t2 = new Thread(WaitingThread)
-            {
-                Name = "T2"
-            };
-            var t3 = new Thread(WaitingThread)
-            {
-                Name = "T3"
-            };
-            t1.Start();
-            t2.Start();
-            t3.Start();
-
-            Console.WriteLine("P2 T1 - Created");
-            Console.WriteLine("P2 T2 - Created");
-            Console.WriteLine("P2 T3 - Created");
-        }
-
-        private static void Queue()
-        {
-            while (true)
-            {
-                if (_endReadFiles == 3)
-                {
-                    _start = false;
-                    _resume = true;
-                    return;
-                }
-            }
-        }
-
-        private static void WaitingThread()
-        {
-            while (true)
-            {
-                if (_start)
-                {
-                    _endReadFiles = 0;
-                    switch (Thread.CurrentThread.Name)
-                    {
-                        case "T1":
-                            Console.WriteLine("P2 T1 - Read File 1");
-                            ReadFirstFile();
-                            Console.WriteLine("P2 T1 - END read File 1");
-                            _endReadFiles++;
-                            Queue();
-                            break;
-                        case "T2":
-                            Console.WriteLine("P2 T2 - Read File 2");
-                            ReadSecondFile();
-                            Console.WriteLine("P2 T2 - END read File 2");
-                            _endReadFiles++;
-                            Queue();
-                            break;
-                        case "T3":
-                            Console.WriteLine("P2 T3 - Read File 3");
-                            ReadEndFile();
-                            Console.WriteLine("P2 T3 - END read File 3");
-                            _endReadFiles++;
-                            Queue();
-                            break;
-                    }
-                }
-            }
-        }
-
-
         private static void ReadFirstFile()
         {
             string tempData;
@@ -158,40 +83,36 @@ namespace WorkWithThreadsProc2
 #endif
         }
 
-        private static void StartWork()
+        private static void WorkProcess2()
         {
+            Console.WriteLine("P2 - T1, T2, T3 - START WORK");
+            var threads = new List<Thread> { new Thread(ReadFirstFile), new Thread(ReadSecondFile), new Thread(ReadEndFile) };
+            //ОБЪЕДИНИТЬ ФУНКЦИИ
+            for (int i = 0; i < 3; i++)
+            {
+                threads[i].Start();
+            }
+            while (threads[0].IsAlive||threads[1].IsAlive||threads[2].IsAlive) { }
+            Console.WriteLine("P2 - T1, T2, T3 - END WORK");
+        }
+
+        private static void Main()
+        {
+            Console.WriteLine("P2 - T0 - Create");
+            using MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("Trigger", sizeof(bool));
+            using var access = mmf.CreateViewAccessor(0, sizeof(bool));
             while (true)
             {
-                using MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("Trigger", sizeof(bool));
-                using var access = mmf.CreateViewAccessor(0, sizeof(bool));
-
                 while (!access.CanRead) { }
                 access.Read(0, out _processAccess);
 
                 if (_processAccess)
                 {
-                    Console.WriteLine("P2 T0 - Give access");
-                    _start = true;
-                    _processAccess = false;
-                    while (!_resume) { }
+                    WorkProcess2();
 
                     while (!access.CanWrite) { }
-                    access.Write(0, _processAccess);
-                    _resume = false;
-                    Thread.Sleep(300);
-                    break;
-
+                    access.Write(0, false);
                 }
-            }
-        }
-
-        private static void Main()
-        {
-            Console.WriteLine("P2 T0 - Start");
-            ControllerThread();
-            while (true)
-            {
-                StartWork();
             }
         }
     }

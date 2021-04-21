@@ -4,11 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.31112.23
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkWithThreads", "WorkWithThreads\WorkWithThreads.csproj", "{CBA57159-73F2-465E-A60D-4B295653B18E}"
-	ProjectSection(ProjectDependencies) = postProject
-		{168D7C01-B2C9-4452-BCAF-68A5614AF79B} = {168D7C01-B2C9-4452-BCAF-68A5614AF79B}
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkWithThreadsProc2", "..\WorkWithThreadsProc2\WorkWithThreadsProc2\WorkWithThreadsProc2.csproj", "{168D7C01-B2C9-4452-BCAF-68A5614AF79B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CBA57159-73F2-465E-A60D-4B295653B18E} = {CBA57159-73F2-465E-A60D-4B295653B18E}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
