@@ -21,6 +21,9 @@ namespace WorkWithThreads
         private static object _flagFile1 = new object();
         private static object _flagFile2 = new object();
         private static object _flagFile3 = new object();
+
+        private static object locker = new object();
+
         private static bool _triggerProcess;
 
         public static void Main()
@@ -36,6 +39,7 @@ namespace WorkWithThreads
             Console.WriteLine("P1 T0 - download posts");
             var api = Authorize();
             GetInfo(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
+            ControllProccess1(arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
 #if DEBUG
             //Process.Start("C:\\Users\\user\\Desktop\\OS\\WorkWithThreadsProc2\\WorkWithThreadsProc2\\bin\\Debug\\netcoreapp3.1\\WorkWithThreadsProc2.exe");
 #endif
@@ -49,6 +53,98 @@ namespace WorkWithThreads
                 GetInfo(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
             }
         }
+
+        private static void ControllProccess1(List<ObjectIdText> arrayObjectIdTexts, List<ObjectIdPhoto> arrayObjectIdPhotos, List<ObjectIdUri> arrayObjectIdUrIs)
+        {
+            //using MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("Trigger", sizeof(bool));
+            //using var access = mmf.CreateViewAccessor(0, sizeof(bool));
+
+            //while (!access.CanRead) { }
+
+            //_triggerProcess = access.ReadBoolean(0);
+            while (true)
+            {
+                for (var mode = 1; mode <= 3; mode++)
+                {
+                    var threads = StartThreadWork(mode, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
+                    while ((threads[0].IsAlive || threads[1].IsAlive || threads[2].IsAlive)) { }
+                }
+            }
+
+            //while (!access.CanWrite) { }
+            //access.Write(0, true);
+        }
+
+        private static List<Thread> StartThreadWork(object mode, List<ObjectIdText> arrayObjectIdTexts, List<ObjectIdPhoto> arrayObjectIdPhotos, List<ObjectIdUri> arrayObjectIdUrIs)
+        {
+            var threads = new List<Thread> { new Thread(SetDataInTextFile), new Thread(SetDataInTextFile), new Thread(ReadDataFile) };
+            //for (int i = 0; i < 2; i++)
+            //    threads[i] = new Thread(SetDataInTextFile);
+            //threads[2] = new Thread(ReadDataFile);
+
+            switch (mode)
+            {
+                case 1:
+
+                    threads[0].Name = "T2 (Photo)";
+                    threads[1].Name = "T3 (Uri)";
+                    threads[2].Name = "T4 (Read)";
+
+                    threads[0].Start(arrayObjectIdPhotos);
+                    threads[1].Start(arrayObjectIdUrIs);
+                    threads[2].Start(mode);
+                    PrintInfo(1);
+                    break;
+                case 2:
+                    threads[0].Name = "T1 (Text)";
+                    threads[1].Name = "T3 (Uri)";
+                    threads[2].Name = "T4 (Read)";
+
+                    threads[0].Start(arrayObjectIdTexts);
+                    threads[1].Start(arrayObjectIdUrIs);
+                    threads[2].Start(mode);
+                    PrintInfo(2);
+                    break;
+                default:
+                    threads[0].Name = "T1 (Text)";
+                    threads[1].Name = "T2 (Photo)";
+                    threads[2].Name = "T4 (Read)";
+
+                    threads[0].Start(arrayObjectIdTexts);
+                    threads[1].Start(arrayObjectIdPhotos);
+                    threads[2].Start(mode);
+                    PrintInfo(3);
+                    break;
+            }
+
+            return threads;
+        }
+
+        private static void PrintInfo(int mode)
+        {
+            switch (mode)
+            {
+                case 1:
+                    Console.WriteLine("P1 T2 - Start");
+                    Console.WriteLine("P1 T3 - Start");
+                    Console.WriteLine("P1 T4 - Start");
+                    break;
+                case 2:
+                    Console.WriteLine("P1 T1 - Start");
+                    Console.WriteLine("P1 T3 - Start");
+                    Console.WriteLine("P1 T4 - Start");
+                    break;
+                case 3:
+                    Console.WriteLine("P1 T1 - Start");
+                    Console.WriteLine("P1 T2 - Start");
+                    Console.WriteLine("P1 T4 - Start");
+                    break;
+                default:
+                    Console.WriteLine("Defaulte");
+                    break;
+            }
+        }
+
 
         private static void WaitingThread(object arrInput)
         {
@@ -74,53 +170,34 @@ namespace WorkWithThreads
             {
                 Name = "T3 (Uri)"
             };
-            var threadT4 = new Thread(ReadDataStaticFile)
-            {
-                Name = "T4 (Read)"
-            };
             threadT1.Start(arrayObjectIdTexts);
             threadT2.Start(arrayObjectIdPhotos);
             threadT3.Start(arrayObjectIdUrIs);
-            threadT4.Start();
             Console.WriteLine("P1 T1 - Start");
             Console.WriteLine("P1 T2 - Start");
             Console.WriteLine("P1 T3 - Start");
-            Console.WriteLine("P1 T4 - Start");
         }
 
         private static void ReadDataStaticFile()
         {
             var iteratorLap = 0;
-            using MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("Trigger", sizeof(bool));
-            while (true)
-            {
-                using var access = mmf.CreateViewAccessor(0, sizeof(bool));
-
-                while (!access.CanRead) { }
-
-                _triggerProcess = access.ReadBoolean(0);
-
-                if (_triggerProcess) continue;
 
 
-                for (var i = 1; i <= 3; i++)
-                    ReadDataFile(i);
 
-                _flagFile1 = false;
-                _flagFile2 = false;
-                _flagFile3 = false;
 
-                iteratorLap++;
+            for (var i = 1; i <= 3; i++)
+                ReadDataFile(i);
 
-                Console.WriteLine("The lap №" + iteratorLap);
-                Thread.Sleep(200 + iteratorLap / 100);
+            iteratorLap++;
 
-                while (!access.CanWrite) { }
-                access.Write(0, true);
-            }
+            Console.WriteLine("The lap №" + iteratorLap);
+            Thread.Sleep(200 + iteratorLap / 100);
+
+
         }
 
-        private static void ReadDataFile(int mode)
+
+        private static void ReadDataFile(object mode)
         {
             List<ObjectIdText> restoredPostsIdText = default;
             List<ObjectIdPhoto> restoredPostsIdPhoto = default;
@@ -133,29 +210,22 @@ namespace WorkWithThreads
             switch (mode)
             {
                 case 1:
-                    lock (_flagFile1)
-                    {
-                        Console.WriteLine("P1 T4 - reading T1 File");
-                        path = "text1.json";
-                        content = " Текст поста: ";
-                        break;
-                    }
+                    Console.WriteLine("P1 T4 - reading T1 File");
+                    path = "text1.json";
+                    content = " Текст поста: ";
+                    break;
+
                 case 2:
-                    lock (_flagFile2)
-                    {
-                        Console.WriteLine("P1 T4 - reading T2 File");
-                        path = "text2.json";
-                        content = " Фото поста: ";
-                        break;
-                    }
+                    Console.WriteLine("P1 T4 - reading T2 File");
+                    path = "text2.json";
+                    content = " Фото поста: ";
+                    break;
+
                 default:
-                    lock (_flagFile3)
-                    {
-                        Console.WriteLine("P1 T4 - reading T3 File");
-                        path = "text3.json";
-                        content = " Ссылка поста: ";
-                        break;
-                    }
+                    Console.WriteLine("P1 T4 - reading T3 File");
+                    path = "text3.json";
+                    content = " Ссылка поста: ";
+                    break;
             }
             using (var streamReader = new StreamReader(path))
             {
@@ -166,19 +236,16 @@ namespace WorkWithThreads
             {
                 restoredPostsIdText = JsonConvert.DeserializeObject<List<ObjectIdText>>(tempData);
                 Console.WriteLine("P1 T4 - END reading T1 File");
-                _flagFile1 = false;
             }
             else if (tempData.Contains("PhotoPost"))
             {
                 restoredPostsIdPhoto = JsonConvert.DeserializeObject<List<ObjectIdPhoto>>(tempData);
                 Console.WriteLine("P1 T4 - END reading T2 File");
-                _flagFile2 = false;
             }
             else if (tempData.Contains("UriPost"))
             {
                 restoredPostsIdUri = JsonConvert.DeserializeObject<List<ObjectIdUri>>(tempData);
                 Console.WriteLine("P1 T4 - END reading T3 File");
-                _flagFile3 = false;
             }
 #if !ThreadAndProcess
             switch (mode)
@@ -221,43 +288,34 @@ namespace WorkWithThreads
             switch (Thread.CurrentThread.Name)
             {
                 case "T1 (Text)":
-                    lock (_flagFile1)
+                    path = "text1.json";
+                    if (!File.Exists(path))
                     {
-                        path = "text1.json";
-                        if (!File.Exists(path))
-                        {
-                            Console.WriteLine("The file \"text1.json\" does not exist.");
-                            SetDataInTextFile(arrInput);
-                        }
+                        Console.WriteLine("The file \"text1.json\" does not exist.");
+                        SetDataInTextFile(arrInput);
+                    }
 
-                        Console.WriteLine("P1 T1 - reading old T1 File");
-                        break;
-                    }
+                    Console.WriteLine("P1 T1 - reading old T1 File");
+                    break;
                 case "T2 (Photo)":
-                    lock (_flagFile2)
+                    path = "text2.json";
+                    if (!File.Exists(path))
                     {
-                        path = "text2.json";
-                        if (!File.Exists(path))
-                        {
-                            Console.WriteLine("The file \"text2.json\" does not exist.");
-                            SetDataInTextFile(arrInput);
-                        }
-                        Console.WriteLine("P1 T2 - reading old T2 File");
-                        break;
+                        Console.WriteLine("The file \"text2.json\" does not exist.");
+                        SetDataInTextFile(arrInput);
                     }
+                    Console.WriteLine("P1 T2 - reading old T2 File");
+                    break;
                 default:
-                    lock (_flagFile3)
+                    var arr3 = (List<ObjectIdUri>)arrInput;
+                    path = "text3.json";
+                    if (!File.Exists(path))
                     {
-                        var arr3 = (List<ObjectIdUri>)arrInput;
-                        path = "text3.json";
-                        if (!File.Exists(path))
-                        {
-                            Console.WriteLine("The file \"text3.json\" does not exist.");
-                            SetDataInTextFile(arrInput);
-                        }
-                        Console.WriteLine("P1 T3 - reading old T3 File");
-                        break;
+                        Console.WriteLine("The file \"text3.json\" does not exist.");
+                        SetDataInTextFile(arrInput);
                     }
+                    Console.WriteLine("P1 T3 - reading old T3 File");
+                    break;
             }
             using (var streamReader = new StreamReader(path))
             {
@@ -288,65 +346,55 @@ namespace WorkWithThreads
 
         private static void SetDataInTextFile(object arrInput)
         {
-            while (true)
+            string jsonString;
+            string path;
+            switch (Thread.CurrentThread.Name)
             {
-                string jsonString;
-                string path;
-                switch (Thread.CurrentThread.Name)
-                {
-                    case "T1 (Text)":
-                        lock (_flagFile1)
-                        {
-                            var arr1 = (List<ObjectIdText>) arrInput;
-                            jsonString = JsonConvert.SerializeObject(arr1);
-                            path = "text1.json";
-                            Console.WriteLine("P1 T1 - writing T1 File");
-                            break;
-                        }
-                    case "T2 (Photo)":
-                        lock (_flagFile2)
-                        {
-                            var arr2 = (List<ObjectIdPhoto>)arrInput;
-                            jsonString = JsonConvert.SerializeObject(arr2);
-                            path = "text2.json";
-                            Console.WriteLine("P1 T2 - writing T2 File");
-                            break;
-                        }
-                    default:
-                        lock (_flagFile3)
-                        {
-                            var arr3 = (List<ObjectIdUri>)arrInput;
-                            jsonString = JsonConvert.SerializeObject(arr3);
-                            path = "text3.json";
-                            Console.WriteLine("P1 T3 - writing T3 File");
-                            break;
-                        }
-                }
-
-
-                using (var streamWriter = new StreamWriter(path))
-                {
-                    streamWriter.WriteLine(jsonString);
-                }
-
-                switch (Thread.CurrentThread.Name)
-                {
-                    case "T1 (Text)":
-                        Console.WriteLine("P1 T1 - END writing T1 File");
-                        _flagFile1 = true;
-                        break;
-                    case "T2 (Photo)":
-                        Console.WriteLine("P1 T2 - END writing T2 File");
-                        _flagFile2 = true;
-                        break;
-                    default:
-                        Console.WriteLine("P1 T3 - END writing T3 File");
-                        _flagFile3 = true;
-                        break;
-                }
-
-                WaitingThread(arrInput);
+                case "T1 (Text)":
+                    var arr1 = (List<ObjectIdText>)arrInput;
+                    jsonString = JsonConvert.SerializeObject(arr1);
+                    path = "text1.json";
+                    Console.WriteLine("P1 T1 - writing T1 File");
+                    break;
+                case "T2 (Photo)":
+                    var arr2 = (List<ObjectIdPhoto>)arrInput;
+                    jsonString = JsonConvert.SerializeObject(arr2);
+                    path = "text2.json";
+                    Console.WriteLine("P1 T2 - writing T2 File");
+                    break;
+                default:
+                    var arr3 = (List<ObjectIdUri>)arrInput;
+                    jsonString = JsonConvert.SerializeObject(arr3);
+                    path = "text3.json";
+                    Console.WriteLine("P1 T3 - writing T3 File");
+                    break;
             }
+
+
+            using (var streamWriter = new StreamWriter(path))
+            {
+                streamWriter.WriteLine(jsonString);
+            }
+
+            //using (var streamWriter = new StreamWriter(path))
+            //{
+            //    streamWriter.WriteLine(jsonString);
+            //}
+
+            switch (Thread.CurrentThread.Name)
+            {
+                case "T1 (Text)":
+                    Console.WriteLine("P1 T1 - END writing T1 File");
+                    break;
+                case "T2 (Photo)":
+                    Console.WriteLine("P1 T2 - END writing T2 File");
+                    break;
+                default:
+                    Console.WriteLine("P1 T3 - END writing T3 File");
+                    break;
+            }
+
+            WaitingThread(arrInput);
         }
 
         private static VkApi Authorize()
