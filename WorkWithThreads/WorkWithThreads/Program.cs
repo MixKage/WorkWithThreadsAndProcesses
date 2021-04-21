@@ -18,9 +18,9 @@ namespace WorkWithThreads
 {
     internal class Program
     {
-        private static bool _flagFile1;
-        private static bool _flagFile2;
-        private static bool _flagFile3;
+        private static object _flagFile1 = new object();
+        private static object _flagFile2 = new object();
+        private static object _flagFile3 = new object();
         private static bool _triggerProcess;
 
         public static void Main()
@@ -37,10 +37,10 @@ namespace WorkWithThreads
             var api = Authorize();
             GetInfo(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
 #if DEBUG
-            Process.Start("C:\\Users\\user\\Desktop\\OS\\WorkWithThreadsProc2\\WorkWithThreadsProc2\\bin\\Debug\\netcoreapp3.1\\WorkWithThreadsProc2.exe");
+            //Process.Start("C:\\Users\\user\\Desktop\\OS\\WorkWithThreadsProc2\\WorkWithThreadsProc2\\bin\\Debug\\netcoreapp3.1\\WorkWithThreadsProc2.exe");
 #endif
 #if !DEBUG
-            Process.Start("C:\\Users\\user\\Desktop\\OS\\WorkWithThreadsProc2\\WorkWithThreadsProc2\\bin\\Release\\netcoreapp3.1\\WorkWithThreadsProc2.exe");
+            //Process.Start("C:\\Users\\user\\Desktop\\OS\\WorkWithThreadsProc2\\WorkWithThreadsProc2\\bin\\Release\\netcoreapp3.1\\WorkWithThreadsProc2.exe");
 #endif
             while (true)
             {
@@ -133,23 +133,29 @@ namespace WorkWithThreads
             switch (mode)
             {
                 case 1:
-                    while (!_flagFile1) { }
-                    Console.WriteLine("P1 T4 - reading T1 File");
-                    path = "text1.json";
-                    content = " Текст поста: ";
-                    break;
+                    lock (_flagFile1)
+                    {
+                        Console.WriteLine("P1 T4 - reading T1 File");
+                        path = "text1.json";
+                        content = " Текст поста: ";
+                        break;
+                    }
                 case 2:
-                    while (!_flagFile2) { }
-                    Console.WriteLine("P1 T4 - reading T2 File");
-                    path = "text2.json";
-                    content = " Фото поста: ";
-                    break;
+                    lock (_flagFile2)
+                    {
+                        Console.WriteLine("P1 T4 - reading T2 File");
+                        path = "text2.json";
+                        content = " Фото поста: ";
+                        break;
+                    }
                 default:
-                    while (!_flagFile3) { }
-                    Console.WriteLine("P1 T4 - reading T3 File");
-                    path = "text3.json";
-                    content = " Ссылка поста: ";
-                    break;
+                    lock (_flagFile3)
+                    {
+                        Console.WriteLine("P1 T4 - reading T3 File");
+                        path = "text3.json";
+                        content = " Ссылка поста: ";
+                        break;
+                    }
             }
             using (var streamReader = new StreamReader(path))
             {
@@ -215,37 +221,43 @@ namespace WorkWithThreads
             switch (Thread.CurrentThread.Name)
             {
                 case "T1 (Text)":
-                    while (_flagFile1) { }
-                    path = "text1.json";
-                    if (!File.Exists(path))
+                    lock (_flagFile1)
                     {
-                        Console.WriteLine("The file \"text1.json\" does not exist.");
-                        SetDataInTextFile(arrInput);
-                    }
+                        path = "text1.json";
+                        if (!File.Exists(path))
+                        {
+                            Console.WriteLine("The file \"text1.json\" does not exist.");
+                            SetDataInTextFile(arrInput);
+                        }
 
-                    Console.WriteLine("P1 T1 - reading old T1 File");
-                    break;
+                        Console.WriteLine("P1 T1 - reading old T1 File");
+                        break;
+                    }
                 case "T2 (Photo)":
-                    while (_flagFile2) { }
-                    path = "text2.json";
-                    if (!File.Exists(path))
+                    lock (_flagFile2)
                     {
-                        Console.WriteLine("The file \"text2.json\" does not exist.");
-                        SetDataInTextFile(arrInput);
+                        path = "text2.json";
+                        if (!File.Exists(path))
+                        {
+                            Console.WriteLine("The file \"text2.json\" does not exist.");
+                            SetDataInTextFile(arrInput);
+                        }
+                        Console.WriteLine("P1 T2 - reading old T2 File");
+                        break;
                     }
-                    Console.WriteLine("P1 T2 - reading old T2 File");
-                    break;
                 default:
-                    while (_flagFile3) { }
-                    var arr3 = (List<ObjectIdUri>)arrInput;
-                    path = "text3.json";
-                    if (!File.Exists(path))
+                    lock (_flagFile3)
                     {
-                        Console.WriteLine("The file \"text3.json\" does not exist.");
-                        SetDataInTextFile(arrInput);
+                        var arr3 = (List<ObjectIdUri>)arrInput;
+                        path = "text3.json";
+                        if (!File.Exists(path))
+                        {
+                            Console.WriteLine("The file \"text3.json\" does not exist.");
+                            SetDataInTextFile(arrInput);
+                        }
+                        Console.WriteLine("P1 T3 - reading old T3 File");
+                        break;
                     }
-                    Console.WriteLine("P1 T3 - reading old T3 File");
-                    break;
             }
             using (var streamReader = new StreamReader(path))
             {
@@ -283,29 +295,32 @@ namespace WorkWithThreads
                 switch (Thread.CurrentThread.Name)
                 {
                     case "T1 (Text)":
-                        while (_flagFile1) { }
-
-                        var arr1 = (List<ObjectIdText>)arrInput;
-                        jsonString = JsonConvert.SerializeObject(arr1);
-                        path = "text1.json";
-                        Console.WriteLine("P1 T1 - writing T1 File");
-                        break;
+                        lock (_flagFile1)
+                        {
+                            var arr1 = (List<ObjectIdText>) arrInput;
+                            jsonString = JsonConvert.SerializeObject(arr1);
+                            path = "text1.json";
+                            Console.WriteLine("P1 T1 - writing T1 File");
+                            break;
+                        }
                     case "T2 (Photo)":
-                        while (_flagFile2) { }
-
-                        var arr2 = (List<ObjectIdPhoto>)arrInput;
-                        jsonString = JsonConvert.SerializeObject(arr2);
-                        path = "text2.json";
-                        Console.WriteLine("P1 T2 - writing T2 File");
-                        break;
+                        lock (_flagFile2)
+                        {
+                            var arr2 = (List<ObjectIdPhoto>)arrInput;
+                            jsonString = JsonConvert.SerializeObject(arr2);
+                            path = "text2.json";
+                            Console.WriteLine("P1 T2 - writing T2 File");
+                            break;
+                        }
                     default:
-                        while (_flagFile3) { }
-
-                        var arr3 = (List<ObjectIdUri>)arrInput;
-                        jsonString = JsonConvert.SerializeObject(arr3);
-                        path = "text3.json";
-                        Console.WriteLine("P1 T3 - writing T3 File");
-                        break;
+                        lock (_flagFile3)
+                        {
+                            var arr3 = (List<ObjectIdUri>)arrInput;
+                            jsonString = JsonConvert.SerializeObject(arr3);
+                            path = "text3.json";
+                            Console.WriteLine("P1 T3 - writing T3 File");
+                            break;
+                        }
                 }
 
 
