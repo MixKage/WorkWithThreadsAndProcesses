@@ -18,12 +18,6 @@ namespace WorkWithThreads
 {
     internal class Program
     {
-        private static object _flagFile1 = new object();
-        private static object _flagFile2 = new object();
-        private static object _flagFile3 = new object();
-
-        private static object locker = new object();
-
         private static bool _triggerProcess;
 
         public static void Main()
@@ -33,54 +27,53 @@ namespace WorkWithThreads
             var arrayObjectIdPhotos = new List<ObjectIdPhoto>();
             var arrayObjectIdUrIs = new List<ObjectIdUri>();
 
-            Console.WriteLine("P1 T0 - Start");
+            Console.WriteLine("P1 - T0 - Start");
 
             ThreadsControl(arrayObjectIdPhotos, arrayObjectIdTexts, arrayObjectIdUrIs);
-            Console.WriteLine("P1 T0 - download posts");
+            Console.WriteLine("P1 - T0 - download posts");
             var api = Authorize();
             GetInfo(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
-            ControllProccess1(arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
 #if DEBUG
-            //Process.Start("C:\\Users\\user\\Desktop\\OS\\WorkWithThreadsProc2\\WorkWithThreadsProc2\\bin\\Debug\\netcoreapp3.1\\WorkWithThreadsProc2.exe");
+            Process.Start("C:\\Users\\user\\Desktop\\OS\\WorkWithThreadsProc2\\WorkWithThreadsProc2\\bin\\Debug\\netcoreapp3.1\\WorkWithThreadsProc2.exe");
 #endif
 #if !DEBUG
-            //Process.Start("C:\\Users\\user\\Desktop\\OS\\WorkWithThreadsProc2\\WorkWithThreadsProc2\\bin\\Release\\netcoreapp3.1\\WorkWithThreadsProc2.exe");
+            Process.Start("C:\\Users\\user\\Desktop\\OS\\WorkWithThreadsProc2\\WorkWithThreadsProc2\\bin\\Release\\netcoreapp3.1\\WorkWithThreadsProc2.exe");
 #endif
-            while (true)
-            {
-                Thread.Sleep(10000);
-                Console.WriteLine("P1 T0 - download posts");
-                GetInfo(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
-            }
+            ControlProcess1(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
         }
 
-        private static void ControllProccess1(List<ObjectIdText> arrayObjectIdTexts, List<ObjectIdPhoto> arrayObjectIdPhotos, List<ObjectIdUri> arrayObjectIdUrIs)
+        private static void ControlProcess1(VkApi api, List<ulong?> arrayIdPost, List<ObjectIdText> arrayObjectIdTexts, List<ObjectIdPhoto> arrayObjectIdPhotos, List<ObjectIdUri> arrayObjectIdUrIs)
         {
-            //using MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("Trigger", sizeof(bool));
-            //using var access = mmf.CreateViewAccessor(0, sizeof(bool));
-
-            //while (!access.CanRead) { }
-
-            //_triggerProcess = access.ReadBoolean(0);
+            using MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("Trigger", sizeof(bool));
+            using var access = mmf.CreateViewAccessor(0, sizeof(bool));
+            int iterator = 0;
             while (true)
             {
+                while (!access.CanRead) { }
+                _triggerProcess = access.ReadBoolean(0);
+                if(_triggerProcess) continue;
+
                 for (var mode = 1; mode <= 3; mode++)
                 {
+                    PrintInfo(mode+3);
                     var threads = StartThreadWork(mode, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
                     while ((threads[0].IsAlive || threads[1].IsAlive || threads[2].IsAlive)) { }
                 }
-            }
 
-            //while (!access.CanWrite) { }
-            //access.Write(0, true);
+                iterator++;
+                while (!access.CanWrite) { }
+                access.Write(0, true);
+                if (iterator % 100 == 0)
+                {
+                    Console.WriteLine("P1 T0 - download posts");
+                    GetInfo(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
+                }
+            }
         }
 
         private static List<Thread> StartThreadWork(object mode, List<ObjectIdText> arrayObjectIdTexts, List<ObjectIdPhoto> arrayObjectIdPhotos, List<ObjectIdUri> arrayObjectIdUrIs)
         {
             var threads = new List<Thread> { new Thread(SetDataInTextFile), new Thread(SetDataInTextFile), new Thread(ReadDataFile) };
-            //for (int i = 0; i < 2; i++)
-            //    threads[i] = new Thread(SetDataInTextFile);
-            //threads[2] = new Thread(ReadDataFile);
 
             switch (mode)
             {
@@ -139,19 +132,15 @@ namespace WorkWithThreads
                     Console.WriteLine("P1 T2 - Start");
                     Console.WriteLine("P1 T4 - Start");
                     break;
-                default:
-                    Console.WriteLine("Defaulte");
+                case 4:
+                    Console.WriteLine("P1 - T4 T2 T3");
                     break;
-            }
-        }
-
-
-        private static void WaitingThread(object arrInput)
-        {
-            while (true)
-            {
-                if (_triggerProcess) continue;
-                return;
+                case 5:
+                    Console.WriteLine("P1 - T1 T4 T3");
+                    break;
+                case 6:
+                    Console.WriteLine("P1 - T1 T2 T4");
+                    break;
             }
         }
 
@@ -177,25 +166,6 @@ namespace WorkWithThreads
             Console.WriteLine("P1 T2 - Start");
             Console.WriteLine("P1 T3 - Start");
         }
-
-        private static void ReadDataStaticFile()
-        {
-            var iteratorLap = 0;
-
-
-
-
-            for (var i = 1; i <= 3; i++)
-                ReadDataFile(i);
-
-            iteratorLap++;
-
-            Console.WriteLine("The lap №" + iteratorLap);
-            Thread.Sleep(200 + iteratorLap / 100);
-
-
-        }
-
 
         private static void ReadDataFile(object mode)
         {
@@ -293,8 +263,8 @@ namespace WorkWithThreads
                     {
                         Console.WriteLine("The file \"text1.json\" does not exist.");
                         SetDataInTextFile(arrInput);
+                        return;
                     }
-
                     Console.WriteLine("P1 T1 - reading old T1 File");
                     break;
                 case "T2 (Photo)":
@@ -303,6 +273,7 @@ namespace WorkWithThreads
                     {
                         Console.WriteLine("The file \"text2.json\" does not exist.");
                         SetDataInTextFile(arrInput);
+                        return;
                     }
                     Console.WriteLine("P1 T2 - reading old T2 File");
                     break;
@@ -313,6 +284,7 @@ namespace WorkWithThreads
                     {
                         Console.WriteLine("The file \"text3.json\" does not exist.");
                         SetDataInTextFile(arrInput);
+                        return;
                     }
                     Console.WriteLine("P1 T3 - reading old T3 File");
                     break;
@@ -326,22 +298,17 @@ namespace WorkWithThreads
             {
                 arrInput = JsonConvert.DeserializeObject<List<ObjectIdText>>(tempData);
                 Console.WriteLine("P1 T4 - END reading T1 File");
-                _flagFile1 = false;
             }
             else if (tempData.Contains("PhotoPost"))
             {
                 arrInput = JsonConvert.DeserializeObject<List<ObjectIdPhoto>>(tempData);
                 Console.WriteLine("P1 T4 - END reading T2 File");
-                _flagFile2 = false;
             }
             else if (tempData.Contains("UriPost"))
             {
                 arrInput = JsonConvert.DeserializeObject<List<ObjectIdUri>>(tempData);
                 Console.WriteLine("P1 T4 - END reading T3 File");
-                _flagFile3 = false;
             }
-
-            SetDataInTextFile(arrInput);
         }
 
         private static void SetDataInTextFile(object arrInput)
@@ -393,8 +360,6 @@ namespace WorkWithThreads
                     Console.WriteLine("P1 T3 - END writing T3 File");
                     break;
             }
-
-            WaitingThread(arrInput);
         }
 
         private static VkApi Authorize()
