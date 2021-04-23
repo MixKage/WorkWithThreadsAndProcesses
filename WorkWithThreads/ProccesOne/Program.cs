@@ -83,7 +83,6 @@ namespace ProccesOne
                 Console.WriteLine($"It's {iterator} loop");
                 if (iterator % 100 == 0)
                 {
-                    Console.WriteLine($"It's {iterator} loop");
                     Console.WriteLine("P1 T0 - download posts");
                     GetInfo(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
                 }
