@@ -1,10 +1,11 @@
 ﻿#define ThreadAndProcess
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Threading;
 using Newtonsoft.Json;
 using VkNet;
@@ -14,7 +15,7 @@ using VkNet.Model.Attachments;
 using VkNet.Model.RequestParams;
 using WorkWithThreads.Objects;
 
-namespace WorkWithThreads
+namespace ProccesOne
 {
     internal class Program
     {
@@ -33,38 +34,56 @@ namespace WorkWithThreads
             Console.WriteLine("P1 - T0 - download posts");
             var api = Authorize();
             GetInfo(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
-#if DEBUG
-            Process.Start("C:\\Users\\user\\Desktop\\OS\\WorkWithThreadsProc2\\WorkWithThreadsProc2\\bin\\Debug\\netcoreapp3.1\\WorkWithThreadsProc2.exe");
-#endif
-#if !DEBUG
-            Process.Start("C:\\Users\\user\\Desktop\\OS\\WorkWithThreadsProc2\\WorkWithThreadsProc2\\bin\\Release\\netcoreapp3.1\\WorkWithThreadsProc2.exe");
-#endif
             ControlProcess1(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
         }
 
-        private static void ControlProcess1(VkApi api, List<ulong?> arrayIdPost, List<ObjectIdText> arrayObjectIdTexts, List<ObjectIdPhoto> arrayObjectIdPhotos, List<ObjectIdUri> arrayObjectIdUrIs)
+        private static void ControlProcess1(VkApi api, List<ulong?> arrayIdPost, List<ObjectIdText> arrayObjectIdTexts,
+            List<ObjectIdPhoto> arrayObjectIdPhotos, List<ObjectIdUri> arrayObjectIdUrIs)
         {
-            using MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("Trigger", sizeof(bool));
+            Console.WriteLine("Wait for service...");
+            var security = new MemoryMappedFileSecurity();
+            security.AddAccessRule(new AccessRule<MemoryMappedFileRights>(
+                new SecurityIdentifier(WellKnownSidType.WorldSid, null), MemoryMappedFileRights.FullControl,
+                AccessControlType.Allow));
+            using var mmf = MemoryMappedFile.CreateOrOpen(@"Global\trigger", sizeof(bool),
+                MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, security,
+                HandleInheritability.Inheritable);
             using var access = mmf.CreateViewAccessor(0, sizeof(bool));
             int iterator = 0;
+            bool msgServer = false;
             while (true)
             {
-                while (!access.CanRead) { }
-                _triggerProcess = access.ReadBoolean(0);
-                if(_triggerProcess) continue;
+                while (!access.CanRead)
+                {
+                }
 
+                _triggerProcess = access.ReadBoolean(0);
+                if (_triggerProcess)
+                {
+                    if (!msgServer)
+                    {
+                        Console.WriteLine("SERVICE WORK..."); msgServer = true;
+                    }
+                    continue;
+                }
+
+                msgServer = false;
                 for (var mode = 1; mode <= 3; mode++)
                 {
-                    PrintInfo(mode+3);
-                    var threads = StartThreadWork(mode, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
+                    PrintInfo(mode + 3);
+                    var threads = StartThreadWork(mode, arrayObjectIdTexts, arrayObjectIdPhotos,
+                        arrayObjectIdUrIs);
                     while ((threads[0].IsAlive || threads[1].IsAlive || threads[2].IsAlive)) { }
                 }
 
                 iterator++;
                 while (!access.CanWrite) { }
+
                 access.Write(0, true);
+                Console.WriteLine($"It's {iterator} loop");
                 if (iterator % 100 == 0)
                 {
+                    Console.WriteLine($"It's {iterator} loop");
                     Console.WriteLine("P1 T0 - download posts");
                     GetInfo(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
                 }
@@ -338,15 +357,12 @@ namespace WorkWithThreads
             }
 
 
-            using (var streamWriter = new StreamWriter(path))
+            using (var streamWriter = new StreamWriter("tmp" + path))
             {
                 streamWriter.WriteLine(jsonString);
             }
 
-            //using (var streamWriter = new StreamWriter(path))
-            //{
-            //    streamWriter.WriteLine(jsonString);
-            //}
+            File.Copy("tmp" + path, path, true);
 
             switch (Thread.CurrentThread.Name)
             {
