@@ -1,6 +1,7 @@
 ﻿#define ThreadAndProcess
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
@@ -27,20 +28,73 @@ namespace ProccesOne
             var arrayObjectIdTexts = new List<ObjectIdText>();
             var arrayObjectIdPhotos = new List<ObjectIdPhoto>();
             var arrayObjectIdUrIs = new List<ObjectIdUri>();
-
+            int iterator = 0;
             Console.WriteLine("P1 - T0 - Start");
 
             ThreadsControl(arrayObjectIdPhotos, arrayObjectIdTexts, arrayObjectIdUrIs);
             Console.WriteLine("P1 - T0 - download posts");
             var api = Authorize();
             GetInfo(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
-            ControlProcess1(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
+            while (true)
+            {
+                if (CheckService())
+                    ControlProcess1(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs,
+                        iterator);
+                else
+                    ControlProcessNotService(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos,
+                        arrayObjectIdUrIs, iterator);
+            }
+        }
+
+        private static bool CheckService()
+        {
+            string tmpProc = default;
+            Process[] procList = Process.GetProcesses();
+            foreach (var tmp in procList)
+            {
+                tmpProc += tmp.ToString();
+            }
+            if (tmpProc.Contains("Deamon"))
+            {
+                return true;
+            }
+
+            Console.WriteLine("!!Service disconnect!!");
+            return false;
+
+        }
+
+        private static void ControlProcessNotService(VkApi api, List<ulong?> arrayIdPost, List<ObjectIdText> arrayObjectIdTexts,
+            List<ObjectIdPhoto> arrayObjectIdPhotos, List<ObjectIdUri> arrayObjectIdUrIs, int iterator)
+        {
+            while (true)
+            {
+                for (var mode = 1; mode <= 3; mode++)
+                {
+                    PrintInfo(mode + 3);
+                    var threads = StartThreadWork(mode, arrayObjectIdTexts, arrayObjectIdPhotos,
+                        arrayObjectIdUrIs);
+                    while ((threads[0].IsAlive || threads[1].IsAlive || threads[2].IsAlive)) { }
+                }
+
+                iterator++;
+                Console.WriteLine($"It's {iterator} loop");
+                if (iterator % 100 == 0)
+                {
+                    Console.WriteLine("P1 T0 - download posts");
+                    GetInfo(api, arrayIdPost, arrayObjectIdTexts, arrayObjectIdPhotos, arrayObjectIdUrIs);
+                }
+
+                if (CheckService())
+                {
+                    return;
+                }
+            }
         }
 
         private static void ControlProcess1(VkApi api, List<ulong?> arrayIdPost, List<ObjectIdText> arrayObjectIdTexts,
-            List<ObjectIdPhoto> arrayObjectIdPhotos, List<ObjectIdUri> arrayObjectIdUrIs)
+            List<ObjectIdPhoto> arrayObjectIdPhotos, List<ObjectIdUri> arrayObjectIdUrIs, int iterator)
         {
-            Console.WriteLine("Wait for service...");
             var security = new MemoryMappedFileSecurity();
             security.AddAccessRule(new AccessRule<MemoryMappedFileRights>(
                 new SecurityIdentifier(WellKnownSidType.WorldSid, null), MemoryMappedFileRights.FullControl,
@@ -49,7 +103,6 @@ namespace ProccesOne
                 MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, security,
                 HandleInheritability.Inheritable);
             using var access = mmf.CreateViewAccessor(0, sizeof(bool));
-            int iterator = 0;
             bool msgServer = false;
             while (true)
             {
@@ -60,6 +113,10 @@ namespace ProccesOne
                 _triggerProcess = access.ReadBoolean(0);
                 if (_triggerProcess)
                 {
+                    if (!CheckService())
+                    {
+                        return;
+                    }
                     if (!msgServer)
                     {
                         Console.WriteLine("SERVICE WORK..."); msgServer = true;
