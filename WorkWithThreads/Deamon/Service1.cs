@@ -1,6 +1,8 @@
 ﻿#define ThreadAndProcess
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.ServiceProcess;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -32,6 +34,25 @@ namespace Deamon
         private const string Path2 = @"C:\Users\user\Desktop\OS\WorkWithThreads\ProccesOne\bin\Release\text2.json";
         private const string Path3 = @"C:\Users\user\Desktop\OS\WorkWithThreads\ProccesOne\bin\Release\text2.json";
 #endif
+
+        private static bool CheckProcess()
+        {
+            string tmpProc = default;
+            Process[] procList = Process.GetProcesses();
+            foreach (var tmp in procList)
+            {
+                tmpProc += tmp.ToString();
+            }
+            if (tmpProc.Contains("ProccesOne"))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         private static void ReadFirstFile()
         {
             string tempData;
@@ -108,8 +129,31 @@ namespace Deamon
         protected override void OnStart(string[] args)
         {
 
-            _main = new Thread(Process2Work);
+            _main = new Thread(BodyService);
             _main.Start();
+        }
+
+        private static void BodyService()
+        {
+            while (true)
+            {
+                if (CheckProcess())
+                    Process2Work();
+                else
+                    Process2WorkNotProcess();
+            }
+        }
+
+        private static void Process2WorkNotProcess()
+        {
+            while (true)
+            {
+                if (CheckProcess())
+                {
+                    return;
+                }
+                WorkProcess2();
+            }
         }
 
         private static void Process2Work()
@@ -127,7 +171,7 @@ namespace Deamon
             {
                 while (!access.CanRead) { }
                 access.Read(0, out _processAccess);
-
+                if (!CheckProcess()) return;
                 if (_processAccess)
                 {
                     WorkProcess2();
